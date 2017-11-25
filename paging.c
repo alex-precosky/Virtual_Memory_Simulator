@@ -57,6 +57,7 @@ int pagein(uint32_t virtualPageNumber,
   physical_page_list.pages[physicalPageNumber].mapped_vpn = virtualPageNumber;
   physical_page_list.pages[physicalPageNumber].is_valid = 1;
 
+
   // Update the page table
   page_table.page_table_entries[virtualPageNumber].is_valid = 1;
   page_table.page_table_entries[virtualPageNumber].PPN = physicalPageNumber;
@@ -106,9 +107,27 @@ void Init_Physical_Page_List(int physicalAddressSizeBytes, int pageSizeBytes)
 
 }
 
-int Get_LRU_Page_Number()
+// Call this whenever reading from a physical page
+void Set_Physical_Page_Last_Usage(int PPN, int last_used)
 {
-  // TODO replace with a proper calculation
-  return 0;
+  physical_page_list.pages[PPN].last_used = last_used;
+}
+
+int Get_LRU_PPN()
+{
+  int lowest_last_used = 999999;
+  int lowest_last_used_index = 0;
+
+  for(int i = 0; i < physical_page_list.num_pages; i++)
+    {
+      int last_used = physical_page_list.pages[i].last_used;
+
+      if( last_used < lowest_last_used)
+	{
+	  lowest_last_used = last_used;
+	  lowest_last_used_index = i;
+	}
+    }
+  return lowest_last_used_index;
 }
 

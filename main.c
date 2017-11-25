@@ -194,7 +194,9 @@ int main(int argc, char **argv) {
     if (!Is_VPN_Valid(VPN)) {
       page_fault = 1;
       pagefaultCount++;
-      PPN = 0;
+
+      // Choose a victim page
+      PPN = Get_LRU_PPN();
 
       if (!pagein(VPN, PPN, physicalMemory, pow(2,pageSize), backingStoreFD)) {
         printf("Error when paging in\n");
@@ -205,7 +207,8 @@ int main(int argc, char **argv) {
     }
 
     // Read the byte
-    char byte = *(physicalMemory + PPN*(1 >> pageSize) + VPO);
+    char byte = *(physicalMemory + (PPN*(1 << pageSize)) + VPO);
+    Set_Physical_Page_Last_Usage(PPN, memoryAccessCount);
 
     // printLookup( access#, virtual address, vpn, vpo, ppn, ppa, tlbHit(1 or 0), pageFault(1 or 0), data )
     printLookup(memoryAccessCount, address, VPN, VPO, PPN, 0, 0, page_fault,  byte);

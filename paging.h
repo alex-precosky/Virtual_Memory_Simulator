@@ -58,7 +58,8 @@ int Is_VPN_Valid(int VPN);
 int Lookup_PPN_For_Valid_VPN( int VPN );
 
 void Init_Physical_Page_List(int physicalAddressSizeBytes, int pageSizeBytes);
- int Get_LRU_Page_Number();
+void Set_Physical_Page_Last_Usage(int PPN, int last_used);
+int Get_LRU_PPN();
 
 // file globals
 static page_table_t page_table;
