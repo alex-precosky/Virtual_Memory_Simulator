@@ -195,7 +195,7 @@ int main(int argc, char **argv) {
       page_fault = 1;
       pagefaultCount++;
       PPN = 0;
-      printf("miss\n");
+
       if (!pagein(VPN, PPN, physicalMemory, pow(2,pageSize), backingStoreFD)) {
         printf("Error when paging in\n");
       }

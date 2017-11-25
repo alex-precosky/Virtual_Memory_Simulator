@@ -54,6 +54,9 @@ int pagein(uint32_t virtualPageNumber,
       page_table.page_table_entries[oldVPN].is_valid = 0;
     }
 
+  physical_page_list.pages[physicalPageNumber].mapped_vpn = virtualPageNumber;
+  physical_page_list.pages[physicalPageNumber].is_valid = 1;
+
   // Update the page table
   page_table.page_table_entries[virtualPageNumber].is_valid = 1;
   page_table.page_table_entries[virtualPageNumber].PPN = physicalPageNumber;
