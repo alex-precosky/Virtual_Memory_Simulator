@@ -40,8 +40,28 @@ typedef struct physical_page_list_s
 } physical_page_list_t;
 
 
- physical_page_list_t Init_Physical_Page_List(int physicalAddressSizeBytes, int pageSizeBytes);
+// Structure for the page table, page table entry
+typedef struct page_table_entry_s
+{
+    int is_valid;
+    uint32_t PPN;
+} page_table_entry_t;
+
+typedef struct page_table_s
+{
+    page_table_entry_t *page_table_entries;
+} page_table_t;
+
+
+void Init_Page_Table(int tableEntries);
+int Is_VPN_Valid(int VPN);
+int Lookup_PPN_For_Valid_VPN( int VPN );
+
+void Init_Physical_Page_List(int physicalAddressSizeBytes, int pageSizeBytes);
  int Get_LRU_Page_Number();
 
+// file globals
+static page_table_t page_table;
+static physical_page_list_t physical_page_list;
 
 #endif

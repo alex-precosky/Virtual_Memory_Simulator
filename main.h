@@ -23,17 +23,6 @@
 #define HIT 1
 #define MISS 0
 
-// Structure for the page table, page table entry
-typedef struct page_table_entry_s
-{
-    int is_valid;
-    uint32_t PPN;
-} page_table_entry_t;
-
-typedef struct page_table_s
-{
-    page_table_entry_t *page_table_entries;
-} page_table_t;
 
 
 

@@ -141,21 +141,13 @@ int main(int argc, char **argv) {
   printf("table size: %d bytes\n", tableSize);
   printf("table entries: %d\n", tableEntries);
 
-  page_table_t *pageTable = (page_table_t *) malloc(sizeof(page_table_t));
-  pageTable->page_table_entries = (page_table_entry_t *) malloc(tableEntries * sizeof(page_table_entry_t));
-  int i;
-  for (i = 0; i < tableEntries; i++) {
-    //pageTable->page_table_entries[i] = (page_table_entry_t) malloc(sizeof(page_table_entry_t));
-    pageTable->page_table_entries[i].is_valid = 0;
-    pageTable->page_table_entries[i].PPN = 0;
-  }
+  Init_Page_Table(tableEntries);
 
   // Figure out various page sizes and amount of physical memory to allocate
   char* physicalMemory = malloc(pow(2, physicalAddressSize));
 
   // Allocate the physical pages
-  physical_page_list_t physical_page_list = Init_Physical_Page_List(pow(2, physicalAddressSize), pow(2, pageSize));
-
+  Init_Physical_Page_List(pow(2, physicalAddressSize), pow(2, pageSize));
 
   int memoryAccessCount = 0;  // The number of access to memory, 1 is the first access
 
@@ -194,24 +186,22 @@ int main(int argc, char **argv) {
     // Check TLB
     uint32_t PPN;
 
-    // Check page table if need be
-    page_table_entry_t *pageTableEntry = pageTable->page_table_entries + VPN;
 
     // bool page_fault
     int page_fault = 0;
 
     // Process a page fault if required
-    if (pageTableEntry->is_valid == 0) {
+    if (!Is_VPN_Valid(VPN)) {
       page_fault = 1;
+      pagefaultCount++;
       PPN = 0;
+      printf("miss\n");
       if (!pagein(VPN, PPN, physicalMemory, pow(2,pageSize), backingStoreFD)) {
         printf("Error when paging in\n");
       }
 
-      pageTableEntry->is_valid = 1;
-      pageTableEntry->PPN = PPN;
     } else {
-      PPN = pageTableEntry->PPN; 
+      PPN = Lookup_PPN_For_Valid_VPN( VPN );
     }
 
     // Read the byte
@@ -229,7 +219,6 @@ int main(int argc, char **argv) {
   // Physical frame is 14
   //memoryAccessCount = 10000;
   //printLookup(memoryAccessCount, 45238, 88, 182, 14, 7350, 1, 0,  -2);
-  pagefaultCount = 312;
   //You must call this to print the summary stats
   printStats(memoryAccessCount, 1987, pagefaultCount);
 

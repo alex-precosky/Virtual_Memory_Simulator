@@ -33,6 +33,7 @@ int pagein(uint32_t virtualPageNumber,
 	   uint32_t  pageSize,
 	   int  backingStorefd ) {
 
+
   int offset = pageSize * virtualPageNumber;
 
   char* buf = physicalMemoryStart + physicalPageNumber*pageSize;
@@ -45,12 +46,51 @@ int pagein(uint32_t virtualPageNumber,
   if( error==-1 )
     return 0;
 
+
+  // Update the physical page list. Check if there was a physical page previously in there
+  if(physical_page_list.pages[physicalPageNumber].is_valid)
+    {
+      int oldVPN = physical_page_list.pages[physicalPageNumber].mapped_vpn;
+      page_table.page_table_entries[oldVPN].is_valid = 0;
+    }
+
+  // Update the page table
+  page_table.page_table_entries[virtualPageNumber].is_valid = 1;
+  page_table.page_table_entries[virtualPageNumber].PPN = physicalPageNumber;
+
   return 1;
 }
 
-physical_page_list_t Init_Physical_Page_List(int physicalAddressSizeBytes, int pageSizeBytes)
+void Init_Page_Table(int tableEntries)
 {
-  physical_page_list_t physical_page_list;
+  page_table.page_table_entries = (page_table_entry_t *) malloc(tableEntries * sizeof(page_table_entry_t));
+  int i;
+  for (i = 0; i < tableEntries; i++) {
+    //pageTable->page_table_entries[i] = (page_table_entry_t) malloc(sizeof(page_table_entry_t));
+    page_table.page_table_entries[i].is_valid = 0;
+    page_table.page_table_entries[i].PPN = 0;
+  }
+}
+
+int Is_VPN_Valid(int VPN)
+{
+  page_table_entry_t pageTableEntry = page_table.page_table_entries[VPN];
+
+  int is_valid = pageTableEntry.is_valid;
+
+  return is_valid;
+}
+
+int Lookup_PPN_For_Valid_VPN( int VPN )
+{
+  page_table_entry_t pageTableEntry = page_table.page_table_entries[VPN];
+
+  return pageTableEntry.PPN; 
+}
+
+void Init_Physical_Page_List(int physicalAddressSizeBytes, int pageSizeBytes)
+{
+
 
   physical_page_list.num_pages = physicalAddressSizeBytes / pageSizeBytes;
   physical_page_list.pages = malloc(physical_page_list.num_pages * sizeof(physical_page_t));
@@ -61,7 +101,6 @@ physical_page_list_t Init_Physical_Page_List(int physicalAddressSizeBytes, int p
       physical_page_list.pages[i].last_used = 0;
     }
 
-  return physical_page_list;
 }
 
 int Get_LRU_Page_Number()
@@ -69,3 +108,4 @@ int Get_LRU_Page_Number()
   // TODO replace with a proper calculation
   return 0;
 }
+
