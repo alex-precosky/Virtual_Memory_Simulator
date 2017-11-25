@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
   
   for (;retVal; retVal = fgets(addrline, 128, addresses)) {
     uint32_t address;
-    memoryAccessCount++;
+
     address = (uint32_t) strtoul(retVal, NULL, 10 );
 
     if (errno != 0) {
@@ -214,11 +214,13 @@ int main(int argc, char **argv) {
       PPN = pageTableEntry->PPN; 
     }
 
-    // Read the byte 
+    // Read the byte
     char byte = *(physicalMemory + PPN*(1 >> pageSize) + VPO);
 
     // printLookup( access#, virtual address, vpn, vpo, ppn, ppa, tlbHit(1 or 0), pageFault(1 or 0), data )
-    printLookup(0, address, VPN, VPO, PPN, 0, 0, page_fault,  byte);
+    printLookup(memoryAccessCount, address, VPN, VPO, PPN, 0, 0, page_fault,  byte);
+
+    memoryAccessCount++;
 
   }
   
