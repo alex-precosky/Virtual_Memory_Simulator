@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 // You must use this function to pagein a page from the
 // backing store . The function takes the
@@ -31,6 +32,40 @@ int pagein(uint32_t virtualPageNumber,
 	   char * physicalMemoryStart,
 	   uint32_t  pageSize,
 	   int  backingStorefd ) {
-  return 0;
+
+  int offset = pageSize * virtualPageNumber;
+
+  char* buf = physicalMemoryStart + physicalPageNumber*pageSize;
+
+  int error  = lseek(backingStorefd, offset, SEEK_SET);
+  if( error==-1 )
+    return 0;
+
+  error = read(backingStorefd, buf, pageSize);
+  if( error==-1 )
+    return 0;
+
+  return 1;
 }
 
+physical_page_list_t Init_Physical_Page_List(int physicalAddressSizeBytes, int pageSizeBytes)
+{
+  physical_page_list_t physical_page_list;
+
+  physical_page_list.num_pages = physicalAddressSizeBytes / pageSizeBytes;
+  physical_page_list.pages = malloc(physical_page_list.num_pages * sizeof(physical_page_t));
+
+  for(int i = 0; i < physical_page_list.num_pages; i++)
+    {
+      physical_page_list.pages[i].is_valid = 0;
+      physical_page_list.pages[i].last_used = 0;
+    }
+
+  return physical_page_list;
+}
+
+int Get_LRU_Page_Number()
+{
+  // TODO replace with a proper calculation
+  return 0;
+}

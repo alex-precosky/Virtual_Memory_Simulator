@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <math.h>
 #include "main.h"
 #include "paging.h"
 
@@ -135,8 +136,11 @@ int main(int argc, char **argv) {
   // comment but be careful. 
   
   // Initialize the page table and TLB systems
-  int tableSize = 2^16;
-  int tableEntries = tableSize / 2^pageSize;
+  int tableSize = pow(2, 16);  // as specified in the specifications
+  int tableEntries = tableSize / pow(2, pageSize);
+  printf("table size: %d bytes\n", tableSize);
+  printf("table entries: %d\n", tableEntries);
+
   page_table_t *pageTable = (page_table_t *) malloc(sizeof(page_table_t));
   pageTable->page_table_entries = (page_table_entry_t *) malloc(tableEntries * sizeof(page_table_entry_t));
   int i;
@@ -147,7 +151,11 @@ int main(int argc, char **argv) {
   }
 
   // Figure out various page sizes and amount of physical memory to allocate
-  char* physicalMemory = malloc(2^physicalAddressSize);
+  char* physicalMemory = malloc(pow(2, physicalAddressSize));
+
+  // Allocate the physical pages
+  physical_page_list_t physical_page_list = Init_Physical_Page_List(pow(2, physicalAddressSize), pow(2, pageSize));
+
 
   int memoryAccessCount = 0;  // The number of access to memory, 1 is the first access
 
@@ -166,6 +174,7 @@ int main(int argc, char **argv) {
     uint32_t address;
     memoryAccessCount++;
     address = (uint32_t) strtoul(retVal, NULL, 10 );
+
     if (errno != 0) {
       printf("Invalid number on file line %d\n", memoryAccessCount);
       break;
@@ -182,24 +191,23 @@ int main(int argc, char **argv) {
 
     uint32_t VPO = address & mask;
 
-    printf("Mask: %d\n", mask);
-    printf("VPN: %d\n", VPN);
-    printf("VPO: %d\n", VPO);
-
     // Check TLB
     uint32_t PPN;
 
     // Check page table if need be
     page_table_entry_t *pageTableEntry = pageTable->page_table_entries + VPN;
 
+    // bool page_fault
+    int page_fault = 0;
+
     // Process a page fault if required
     if (pageTableEntry->is_valid == 0) {
-      printf("invalid\n");
+      page_fault = 1;
       PPN = 0;
-      if (pagein(VPN, PPN, physicalMemory, pageSize, backingStoreFD)) {
+      if (!pagein(VPN, PPN, physicalMemory, pow(2,pageSize), backingStoreFD)) {
         printf("Error when paging in\n");
       }
-      printf("retreived page %d from disk");
+
       pageTableEntry->is_valid = 1;
       pageTableEntry->PPN = PPN;
     } else {
@@ -207,17 +215,18 @@ int main(int argc, char **argv) {
     }
 
     // Read the byte 
-    char byte = *(physicalMemory + PPN);
-    printf("%d\n", byte);
+    char byte = *(physicalMemory + PPN*(1 >> pageSize) + VPO);
 
-    // You must call printLookup(memoryAccessCount, address, ....);
+    // printLookup( access#, virtual address, vpn, vpo, ppn, ppa, tlbHit(1 or 0), pageFault(1 or 0), data )
+    printLookup(0, address, VPN, VPO, PPN, 0, 0, page_fault,  byte);
+
   }
   
   // Example printing : 512 byte pages
   // Virtual address 45238
   // Physical frame is 14
-  memoryAccessCount = 10000;
-  printLookup(memoryAccessCount, 45238, 88, 182, 14, 7350, 1, 0,  -2);
+  //memoryAccessCount = 10000;
+  //printLookup(memoryAccessCount, 45238, 88, 182, 14, 7350, 1, 0,  -2);
   pagefaultCount = 312;
   //You must call this to print the summary stats
   printStats(memoryAccessCount, 1987, pagefaultCount);

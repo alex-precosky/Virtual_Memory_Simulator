@@ -36,20 +36,6 @@ typedef struct page_table_s
 } page_table_t;
 
 
-// Structure for the physical memory and pages
-typedef struct physical_page_s
-{
-    int is_valid;
-    int last_used;
-    uint32_t mapped_vpn;
-    unsigned char *data;
-} physical_page_t;
-
-typedef struct physical_page_list_s 
-{
-    unsigned int num_pages;
-    physical_page_t *pages;
-} physical_page_list_t;
 
 
 #endif

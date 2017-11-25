@@ -24,6 +24,24 @@ int pagein(uint32_t virtualPageNumber,
 // * initialize the paging system
 // * check to see if a virtual page is mapped in and at what location
 // * locate the page to to replace
+// Structure for the physical memory and pages
+typedef struct physical_page_s
+{
+    int is_valid;
+    int last_used;
+    uint32_t mapped_vpn;
+    unsigned char *data;
+} physical_page_t;
+
+typedef struct physical_page_list_s 
+{
+    unsigned int num_pages;
+    physical_page_t *pages;
+} physical_page_list_t;
+
+
+ physical_page_list_t Init_Physical_Page_List(int physicalAddressSizeBytes, int pageSizeBytes);
+ int Get_LRU_Page_Number();
 
 
 #endif
