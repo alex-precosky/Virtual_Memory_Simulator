@@ -19,6 +19,7 @@
 #include <math.h>
 #include "main.h"
 #include "paging.h"
+#include "tlb.h"
 
 #define EXPECTED_ARG_COUNT 5
 
@@ -142,6 +143,8 @@ int main(int argc, char **argv) {
   printf("table entries: %d\n", tableEntries);
 
   Init_Page_Table(tableEntries);
+  TLBinit( pageSize );
+  int tlb_miss_count = 0;
 
   // Figure out various page sizes and amount of physical memory to allocate
   char* physicalMemory = malloc(pow(2, physicalAddressSize));
@@ -186,32 +189,59 @@ int main(int argc, char **argv) {
     // Check TLB
     uint32_t PPN;
 
+    int tlbResult = checkTLB(memoryAccessCount, VPN);
+    int tlb_hit;
+
+    if(tlbResult == TLBFAULT)
+      {
+	tlb_miss_count++;
+	tlb_hit = 0;
+      }
+    else
+      {
+	tlb_hit = 1;
+	PPN = tlbResult;
+      }
+
 
     // bool page_fault
     int page_fault = 0;
 
-    // Process a page fault if required
-    if (!Is_VPN_Valid(VPN)) {
-      page_fault = 1;
-      pagefaultCount++;
+    if(!tlb_hit)
+      {
+	// Process a page fault if required
+	if (!Is_VPN_Valid(VPN)) {
+	  page_fault = 1;
+	  pagefaultCount++;
 
-      // Choose a victim page
-      PPN = Get_LRU_PPN();
+	  // Choose a victim page
+	  PPN = Get_LRU_PPN();
 
-      if (!pagein(VPN, PPN, physicalMemory, pow(2,pageSize), backingStoreFD)) {
-        printf("Error when paging in\n");
+	  // remove victim page from TLB
+	  evictTLB(PPN);
+
+	  if (!pagein(VPN, PPN, physicalMemory, pow(2,pageSize), backingStoreFD)) {
+	    printf("Error when paging in\n");	  
+	  }
+
+
+	} else {
+	  PPN = Lookup_PPN_For_Valid_VPN( VPN );
+	}
+
+	updateTLB(memoryAccessCount, VPN, PPN);
+
       }
 
-    } else {
-      PPN = Lookup_PPN_For_Valid_VPN( VPN );
-    }
+
 
     // Read the byte
-    char byte = *(physicalMemory + (PPN*(1 << pageSize)) + VPO);
+    int PPA = (PPN*(1 << pageSize)) + VPO;
+    char byte = *(physicalMemory + PPA);
     Set_Physical_Page_Last_Usage(PPN, memoryAccessCount);
 
     // printLookup( access#, virtual address, vpn, vpo, ppn, ppa, tlbHit(1 or 0), pageFault(1 or 0), data )
-    printLookup(memoryAccessCount, address, VPN, VPO, PPN, 0, 0, page_fault,  byte);
+    printLookup(memoryAccessCount, address, VPN, VPO, PPN, PPA, tlb_hit, page_fault,  byte);
 
     memoryAccessCount++;
 
@@ -223,7 +253,7 @@ int main(int argc, char **argv) {
   //memoryAccessCount = 10000;
   //printLookup(memoryAccessCount, 45238, 88, 182, 14, 7350, 1, 0,  -2);
   //You must call this to print the summary stats
-  printStats(memoryAccessCount, 1987, pagefaultCount);
+  printStats(memoryAccessCount, tlb_miss_count, pagefaultCount);
 
   return SUCCESS;
 }
